@@ -218,3 +218,7 @@ __marimo__/
 # Dataset
 dataset/lfw_funneled
 dataset/test_face_detection
+
+# Models
+models/face_recognizer.yml
+models/identity_map.csv
