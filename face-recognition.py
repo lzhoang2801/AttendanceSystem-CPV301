@@ -13,23 +13,18 @@ else:
     identity_map = pd.read_csv(map_path)
 
 def recognize_face(frame):
+    recognized_faces = []
     faces = face_detection(frame)
 
     for (x, y, w, h, _) in faces:
         cropped_face = frame[y:y+h, x:x+w]
         cropped_face = cv2.cvtColor(cropped_face, cv2.COLOR_BGR2GRAY)
         cropped_face = cv2.resize(cropped_face, (100, 100))
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        label, confidence = face_recognizer.predict(cropped_face)
-        if confidence < 100:
-            label_name = identity_map[identity_map['label_id'] == label]['label_name'].values[0]
-            print(f"User: {label_name}, Confidence: {confidence}")
-            cv2.putText(frame, f"User: {label_name}, Confidence: {confidence}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        else:
-            print(f"Unknown Face")
-            cv2.putText(frame, f"Unknown Face", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
-    return frame
+        label, confidence = face_recognizer.predict(cropped_face)
+        recognized_faces.append((x, y, w, h, label, confidence))
+
+    return recognized_faces
 
 if __name__ == '__main__':
     capture = cv2.VideoCapture(0)
@@ -39,12 +34,29 @@ if __name__ == '__main__':
     capture.set(3, 640)
     capture.set(4, 480)
 
+    threshold = 80
+
     while True:
         ret, frame = capture.read()
         if not ret:
             break
     
-        recognize_face(frame)
+        recognized_faces = recognize_face(frame)
+
+        for (x, y, w, h, label, confidence) in recognized_faces:
+            if confidence < threshold:
+                try:
+                    label_name = identity_map[identity_map['label_id'] == label]['label_name'].values[0]
+                    text = f"{label_name} ({confidence:.2f})"
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.putText(frame, text, (x, y - 10), cv2.FONT_ITALIC, 0.7, (0, 255, 0), 2)
+                    continue
+                except:
+                    pass
+
+            text = f"Unknown ({confidence:.2f})"
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(frame, text, (x, y - 10), cv2.FONT_ITALIC, 0.7, (0, 0, 255), 2)
 
         cv2.imshow('Face Recognition', frame)
 
