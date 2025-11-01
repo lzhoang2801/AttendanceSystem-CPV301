@@ -3,6 +3,8 @@ import time
 import os
 from face_detection import face_detection
 
+os.makedirs('dataset/face_registration', exist_ok=True)
+
 def face_registration(username, user_id, frame, face):
     for (x, y, w, h, _) in face:
         cropped_face = frame[y:y+h, x:x+w]
@@ -16,7 +18,7 @@ def face_registration(username, user_id, frame, face):
 if __name__ == '__main__':
     capture = cv2.VideoCapture(0)
     if not capture.isOpened():
-        raise ValueError('Could not open video capture')
+        raise ValueError('Camera not found. Please check your camera connection and try again.')
         
     capture.set(3, 640)
     capture.set(4, 480)
@@ -24,12 +26,10 @@ if __name__ == '__main__':
     username = input('Enter your name: ').replace(' ', '').lower().strip()
     user_id = input('Enter your user ID: ').replace(' ', '').lower().strip()
 
-    os.makedirs('dataset/face_registration', exist_ok=True)
-
     frame_count = 0
     saved_count = 0
     wait_frames = 10
-    target_saves = 50
+    target_saves = 20
 
     while True:
         ret, frame = capture.read()
@@ -47,6 +47,8 @@ if __name__ == '__main__':
         for (x, y, w, h, _) in faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
+        progress_text = f'Saved {saved_count}/{target_saves} images'
+        cv2.putText(frame, progress_text, (10, 30), cv2.FONT_ITALIC, 0.7, (0, 255, 0), 2)
         cv2.imshow('Face Registration for ' + username, frame)
 
         frame_count += 1

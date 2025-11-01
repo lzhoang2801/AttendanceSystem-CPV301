@@ -216,9 +216,11 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Dataset
-dataset/lfw_funneled
-dataset/test_face_detection
+dataset/*
 
 # Models
 models/face_recognizer.yml
 models/identity_map.csv
+
+# History
+history/attendance.csv

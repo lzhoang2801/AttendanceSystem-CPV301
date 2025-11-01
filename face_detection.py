@@ -78,6 +78,7 @@ def face_detection(frame):
         if len(current_faces) > 0:
             for face in current_faces:
                 faces.append((*face * 3, index))
+            break
 
     if len(faces) > 0:
         faces = non_max_suppression(faces, iou_threshold=0.2)
@@ -87,7 +88,7 @@ def face_detection(frame):
 if __name__ == '__main__':
     capture = cv2.VideoCapture(0)
     if not capture.isOpened():
-        raise ValueError('Could not open video capture')
+        raise ValueError('Camera not found. Please check your camera connection and try again.')
         
     capture.set(3, 640)
     capture.set(4, 480)
