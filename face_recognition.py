@@ -25,11 +25,11 @@ def recognize_faces(frame, detected_faces, recognizer, identity_map, last_logged
                 label_name = identity_map.loc[identity_map['label_id'] == label, 'label_name'].values[0]
                 is_recognized = True
 
-                now = datetime.now()
-                date = now.strftime('%Y-%m-%d')
-                time = now.strftime('%H:%M:%S')
-
                 if attendance_mode and label_name not in last_logged:
+                    now = datetime.now()
+                    date = now.strftime('%Y-%m-%d')
+                    time = now.strftime('%H:%M:%S')
+
                     log_attendance(label_name, date, time)
                     last_logged[label_name] = (date, time)
                     logged_new = True
