@@ -3,7 +3,7 @@ import numpy as np
 
 face_cascade = cv2.CascadeClassifier('models/haarcascade_frontalface_default.xml')
 
-def rotate_and_equalize(frame):
+def equalize_sides(frame):
     height, width = frame.shape[:2]
 
     midX = int(width/2)
@@ -13,9 +13,9 @@ def rotate_and_equalize(frame):
     equL = cv2.equalizeHist(leftSide)
     equR = cv2.equalizeHist(rightSide)
 
-    rotated_equalized = np.concatenate((equL, equR), axis=1)
+    equalized = np.concatenate((equL, equR), axis=1)
 
-    return rotated_equalized
+    return equalized
 
 def non_max_suppression(boxes, iou_threshold=0.3):
     if boxes is None or len(boxes) == 0:
@@ -59,31 +59,60 @@ def non_max_suppression(boxes, iou_threshold=0.3):
 
     return boxes[keep].astype(int)
 
-def face_detection(frame):
+def find_best_face(faces, frame_width, frame_height):
+    if len(faces) == 0:
+        return np.array([])
+    
+    if len(faces) == 1:
+        return faces
+
+    frame_center_x = frame_width / 2
+    frame_center_y = frame_height / 2
+
+    areas = faces[:, 2] * faces[:, 3]
+    face_centers_x = faces[:, 0] + faces[:, 2] / 2
+    face_centers_y = faces[:, 1] + faces[:, 3] / 2
+
+    dists_to_center = np.sqrt((face_centers_x - frame_center_x)**2 + (face_centers_y - frame_center_y)**2)
+
+    max_area = np.max(areas)
+    norm_areas = areas / max_area if max_area > 0 else np.zeros_like(areas)
+
+    max_dist = np.max(dists_to_center)
+    norm_dists = 1 - (dists_to_center / max_dist) if max_dist > 0 else np.ones_like(dists_to_center)
+
+    scores = 0.7 * norm_areas + 0.3 * norm_dists
+
+    best_face_index = np.argmax(scores)
+    return np.array([faces[best_face_index]])
+
+def face_detection(frame, registration_mode=False):
+    scale_frame = 3
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    resized = cv2.resize(gray_frame, (0, 0), fx=1/3, fy=1/3)
+    resized = cv2.resize(gray_frame, (0, 0), fx=1/scale_frame, fy=1/scale_frame)
 
     scaleFactor = 1.05
-    minNeighbors = 5
+    minNeighbors = 4
 
     variants = [
         resized,
         cv2.equalizeHist(resized),
-        rotate_and_equalize(resized),
+        equalize_sides(resized),
     ]
 
-    faces = []
+    detected_faces = []
     for index, variant in enumerate(variants):
         current_faces = face_cascade.detectMultiScale(variant, scaleFactor=scaleFactor, minNeighbors=minNeighbors)
-        if len(current_faces) > 0:
-            for face in current_faces:
-                faces.append((*face * 3, index))
-            break
+        for face in current_faces:
+            detected_faces.append((*face * scale_frame, index))
 
-    if len(faces) > 0:
-        faces = non_max_suppression(faces, iou_threshold=0.2)
+    if len(detected_faces) > 0:
+        #detected_faces = non_max_suppression(np.array(detected_faces), iou_threshold=0.2)
+        if registration_mode and len(detected_faces) > 0:
+            frame_height, frame_width = frame.shape[:2]
+            detected_faces = find_best_face(detected_faces, frame_width, frame_height)
 
-    return faces
+    return detected_faces
 
 if __name__ == '__main__':
     capture = cv2.VideoCapture(0)
@@ -93,17 +122,15 @@ if __name__ == '__main__':
     capture.set(3, 640)
     capture.set(4, 480)
 
-    color_map = {0: (0, 255, 0), 1: (0, 0, 255), 2: (255, 0, 0)}
-
     while True:
         ret, frame = capture.read()
         if not ret:
             break
     
-        faces = face_detection(frame)
+        faces = face_detection(frame, not True)
 
         for (x, y, w, h, v) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color_map[v], 2)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         cv2.imshow('Face Detection', frame)
 

@@ -202,7 +202,7 @@ class App(ctk.CTk):
                     self.update_attendance_log()
             
             elif self.mode == "Registration":
-                detected_faces = face_detection(frame_processed)
+                detected_faces = face_detection(frame_processed, registration_mode=True)
                 if self.face_capture_frame_count % self.face_capture_wait_frames == 0:
                     if len(detected_faces) > 0:
                         face_registration(self.registration_info["name"], self.registration_info["id"], frame, detected_faces)
