@@ -107,7 +107,7 @@ def face_detection(frame, registration_mode=False):
             detected_faces.append((*face * scale_frame, index))
 
     if len(detected_faces) > 0:
-        #detected_faces = non_max_suppression(np.array(detected_faces), iou_threshold=0.2)
+        detected_faces = non_max_suppression(np.array(detected_faces), iou_threshold=0.2)
         if registration_mode and len(detected_faces) > 0:
             frame_height, frame_width = frame.shape[:2]
             detected_faces = find_best_face(detected_faces, frame_width, frame_height)
